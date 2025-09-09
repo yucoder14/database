@@ -12,6 +12,14 @@ enum DataType {
 	VARCHAR
 };
 
+std::vector<std::string> DataTypeString = { 
+	"INTEGER",
+	"BOOL",
+	"DOUBLE",
+	"CHAR",
+	"VARCHAR"
+};
+
 /*** ColumnDef Structs **********************************************************/
 
 class ColumnDef {
@@ -19,6 +27,12 @@ public:
 	virtual DataType getType() const = 0;
 	virtual bool getNotNull() const = 0; 
 	virtual bool getHasDefault() const = 0;
+	virtual std::vector<int> getParameters() const = 0;
+
+	virtual void setParameters(std::vector<int> _parameters) = 0;
+
+	virtual std::string toString() const = 0;
+
 	virtual ~ColumnDef() = default;
 };	
 
@@ -32,15 +46,50 @@ public:
 	DataType getType() const override { return type; }
 	bool getNotNull() const override { return notNull; }	
 	bool getHasDefault() const override { return hasDefault; }	
+	std::vector<int> getParameters() const override { return parameters; }
+	T getDefaultValue() const { return defaultData; };
+
+	void setParameters(std::vector<int> _parameters) override {
+		parameters = std::move(_parameters);	 
+	}	
+
+	std::string toString() const override {
+		std::string stringified = DataTypeString[type];		 
+		if (parameters.size()) {
+			stringified += "(";
+			for (auto &parameter : parameters) {
+				stringified += std::to_string(parameter) + ", ";
+			}	
+			stringified.pop_back();
+			stringified.pop_back();
+			stringified += ")";
+		}	
+
+		if (notNull) stringified += " NOT NULL";
+		if (hasDefault) {
+			stringified += " DEFAULT ";
+			stringified += stringify(defaultData); 
+		}	
+		return stringified;
+	}	
 
 	void setDefaultValue(T data) { defaultData = data; }
-	T getDefaultValue() const { return defaultData; };
 private:
 	DataType type; 
 	size_t size; 
 	bool notNull;
 	bool hasDefault; 
 	T defaultData;
+	std::vector<int> parameters;
+
+	std::string stringify(const T& data) const {
+		if constexpr (std::is_same_v<T, std::string>)
+			return data;
+		else if constexpr (std::is_same_v<T, bool>)
+			return data ? "TRUE" : "FALSE";
+		else
+			return std::to_string(data);
+	}	
 };	
 
 
